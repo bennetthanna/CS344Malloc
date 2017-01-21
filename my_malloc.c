@@ -111,13 +111,17 @@ void *my_malloc(int size) {
                  */
                 
                 if(previous_node == NULL) {
+                    printf("free_list = current_node\n");
                     free_list = current_node;
+                    printf("returning current node\n");
                     return current_node;
                 } else {
+                    previous_node->next = current_node;
+                    printf("else returning current node\n");
+                    printf("current node = 0x%x\n", current_node);
+                    printf("current node size = %i\n", current_node->size);
                     return current_node;
                 }
-//                free_list = current_node;
-//                return current_node;
             }
             
             //if there is not enough space on the free list and you are at the end of the free list
@@ -136,7 +140,7 @@ void *my_malloc(int size) {
                 fprintf(stderr, "new size = %i\n", current_node->size);
                 //now that you've allocated more memory call my_malloc again
                 my_malloc(size);
-                return current_node;
+//                return current_node;
             }
             
             //set previous node to the current node
@@ -173,6 +177,7 @@ void print_free_list() {
         printf("NODE #        |ADDRESS       |SIZE          |NEXT           \n");
         while (free_list_head != NULL) {
             printf("%-14i%c%s%-12x%c%-14d%c%s%-12x\n", nodeNum, '|' , "0x", free_list_head ,'|', free_list_head->size, '|', "0x", free_list_head->next);
+            
             //increment current node and number of nodes
             free_list_head = free_list_head->next;
             nodeNum += 1;
