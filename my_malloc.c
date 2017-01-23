@@ -6,6 +6,8 @@ free_list_node *current_node;
 free_list_node *tempNext;
 free_list_node *previous_node;
 free_list_node *free_list_head;
+free_list_node *free_list_end;
+free_list_node *allocated_node;
 int tempSize;
 int nodeNum;
 
@@ -90,6 +92,9 @@ void *my_malloc(int size) {
                 //set current node's size to tempSize to hold onto
                 tempSize = current_node->size;
                 
+                allocated_node = current_node;
+                allocated_node->size = size;
+                
                 fprintf(stderr, "current address = 0x%x\n", current_node);
                 //move pointer to new head of free list by adding size requested plus size of node
                 //you must add size of node as well to ignore the part that is just size and next pointer
@@ -151,7 +156,25 @@ void *my_malloc(int size) {
     }
 }
 
+free_list_node *freeing_node;
+
 void my_free(void *ptr) {
+    //set address wanting to be freed to free_list_node
+    //because the address given to us is the address that was returned by malloc when called
+    //the address is past the address of the allocated memory so we have to move the address
+    //back by taking address give (freeing_node) minus the size minus the size of the node
+    //where the size and next pointer are held
+    freeing_node = ptr;
+    fprintf(stderr, "my_free: Called with 0x%x\n", (freeing_node - freeing_node->size - sizeof(free_list_node)));
+    fprintf(stderr, "size to put back on free list = %i\n", freeing_node->size);
+    //the current end of free list next will become the current address plus size of node
+    //plus size of current node
+    free_list_end->next = free_list_end + free_list_end->size + sizeof(free_list_node);
+    free_list_end = free_list_end->next;
+    freeing_node = freeing_node - freeing_node->size - sizeof(free_list_node);
+    free_list_end->size = freeing_node->size;
+    fprintf(stderr, "free list end size = %i\n", free_list_end->size);
+    free_list_end->next = NULL;
     
 }
 
@@ -178,6 +201,11 @@ void print_free_list() {
         while (free_list_head != NULL) {
             printf("%-14i%c%s%-12x%c%-14d%c%s%-12x\n", nodeNum, '|' , "0x", free_list_head ,'|', free_list_head->size, '|', "0x", free_list_head->next);
             
+            //if the node's next is null that means it is the end of the free list
+            if (free_list_head->next == NULL) {
+                free_list_end = free_list_head;
+            }
+            
             //increment current node and number of nodes
             free_list_head = free_list_head->next;
             nodeNum += 1;
@@ -197,8 +225,14 @@ int main() {
     print_free_list();
     my_malloc(800);
     print_free_list();
-    my_malloc(400);
+    printf("main: Allocating ints\n");
+    int *x = (int*)my_malloc(100 * sizeof(int));
+    printf("int *x = 0x%x\n", x);
     print_free_list();
     my_malloc(1000);
+    print_free_list();
+    
+    printf("main: Freeing ints\n");
+    my_free(x);
     print_free_list();
 }
