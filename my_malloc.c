@@ -70,15 +70,25 @@ void *my_malloc(int size) {
                     printf("Previous node is NULL\n");
                     printf("Current_node->next = 0x%x\n", current_node->next);
                     //set the current node to the next node
+                    
+                    allocated_node = current_node;
+                    allocated_node->size = size;
+                    allocated_node->next = current_node->next;
+                    
                     current_node = current_node->next;
                     //set head of free list to the new current node as that will be the new head
                     free_list = current_node;
-                    return current_node;
+                    return allocated_node;
                 } else {
                     printf("Else");
+                    
+                    allocated_node = current_node;
+                    allocated_node->size = size;
+                    allocated_node->next = current_node->next;
+                    
                     //else set the take the previous node's next to the current node's next
                     previous_node->next = current_node->next;
-                    return previous_node;
+                    return allocated_node;
                 }
 
             }
@@ -96,6 +106,7 @@ void *my_malloc(int size) {
                 allocated_node->size = size;
                 
                 fprintf(stderr, "current address = 0x%x\n", current_node);
+                fprintf(stderr, "pointer of allocated node = 0x%x\n", allocated_node);
                 //move pointer to new head of free list by adding size requested plus size of node
                 //you must add size of node as well to ignore the part that is just size and next pointer
                 //this puts the current node address to the beginning of usable memory
@@ -108,6 +119,9 @@ void *my_malloc(int size) {
                 current_node->next = tempNext;
                 fprintf(stderr, "next = 0x%x\n", current_node->next);
                 
+                //set the allocated node's next to the other part of the node you just split
+                allocated_node->next = current_node;
+                
                 //WHAT IS THIS LINE DOING?
                 /* Should I do that if previous node is NULL then current node will be new head of free list
                  * free_list = current_node, return current_node
@@ -119,13 +133,13 @@ void *my_malloc(int size) {
                     printf("free_list = current_node\n");
                     free_list = current_node;
                     printf("returning current node\n");
-                    return current_node;
+                    return allocated_node;
                 } else {
                     previous_node->next = current_node;
                     printf("else returning current node\n");
                     printf("current node = 0x%x\n", current_node);
                     printf("current node size = %i\n", current_node->size);
-                    return current_node;
+                    return allocated_node;
                 }
             }
             
@@ -138,6 +152,11 @@ void *my_malloc(int size) {
                 //set the pointer to next to the address of the current node + size of the current node + size of node
                 current_node->next = (current_node + current_node->size + sizeof(free_list_node));
                 fprintf(stderr, "new next = 0x%x\n", current_node->next);
+                
+                allocated_node = current_node->next;
+                allocated_node->size = SIZE - sizeof(free_list_node);
+                allocated_node->next = NULL;
+                
                 //set the current node to the newly allocated memory
                 current_node = current_node->next;
                 //set the new node's size to the size allocated - size of node
@@ -145,7 +164,7 @@ void *my_malloc(int size) {
                 fprintf(stderr, "new size = %i\n", current_node->size);
                 //now that you've allocated more memory call my_malloc again
                 my_malloc(size);
-//                return current_node;
+                return allocated_node;
             }
             
             //set previous node to the current node
@@ -165,13 +184,15 @@ void my_free(void *ptr) {
     //back by taking address give (freeing_node) minus the size minus the size of the node
     //where the size and next pointer are held
     freeing_node = ptr;
-    fprintf(stderr, "my_free: Called with 0x%x\n", (freeing_node - freeing_node->size - sizeof(free_list_node)));
+//    fprintf(stderr, "my_free: Called with 0x%x\n", (freeing_node - freeing_node->size - sizeof(free_list_node)));
+    
+    fprintf(stderr, "my_free: Called with 0x%x\n", freeing_node);
     fprintf(stderr, "size to put back on free list = %i\n", freeing_node->size);
     //the current end of free list next will become the current address plus size of node
     //plus size of current node
     free_list_end->next = free_list_end + free_list_end->size + sizeof(free_list_node);
     free_list_end = free_list_end->next;
-    freeing_node = freeing_node - freeing_node->size - sizeof(free_list_node);
+//    freeing_node = freeing_node - freeing_node->size - sizeof(free_list_node);
     free_list_end->size = freeing_node->size;
     fprintf(stderr, "free list end size = %i\n", free_list_end->size);
     free_list_end->next = NULL;
